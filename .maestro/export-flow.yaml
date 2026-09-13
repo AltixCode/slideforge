@@ -1,0 +1,20 @@
+appId: com.altixcode.slideforge
+---
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- tapOn: ".*Use sample text.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: ".*Build \\d+ cards.*"
+- extendedWaitUntil:
+    visible: ".*CARD STYLE.*"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn: ".*Save \\d+ cards.*"
+- extendedWaitUntil:
+    visible: ".*(Carousel saved|Permission Denied|Export Failed).*"
+    timeout: 120000
+- takeScreenshot: sf-saved

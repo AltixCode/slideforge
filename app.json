@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "SlideForge",
+    "slug": "slideforge",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "slideforge",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.altixcode.slideforge",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "SlideForge saves the carousel slides it renders to your photo library."
+      }
+    },
+    "android": {
+      "package": "com.altixcode.slideforge",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "./plugins/withIOSSceneLifecycle",
+      "./plugins/withAndroidRtl"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
