@@ -18,7 +18,22 @@
       "bundleIdentifier": "com.altixcode.slideforge",
       "buildNumber": "1",
       "infoPlist": {
-        "NSPhotoLibraryAddUsageDescription": "SlideForge saves the carousel slides it renders to your photo library."
+        "NSPhotoLibraryAddUsageDescription": "SlideForge saves the carousel slides it renders to your photo library.",
+        "CFBundleLocalizations": [
+          "en",
+          "es",
+          "fr",
+          "de",
+          "ru",
+          "zh",
+          "ja",
+          "pt",
+          "ko",
+          "it",
+          "tr",
+          "el"
+        ],
+        "CFBundleDevelopmentRegion": "en"
       }
     },
     "android": {
@@ -35,7 +50,26 @@
       "expo-router",
       "expo-localization",
       "./plugins/withIOSSceneLifecycle",
-      "./plugins/withAndroidRtl"
+      "./plugins/withAndroidRtl",
+      [
+        "./plugins/withAndroidLocales",
+        {
+          "locales": [
+            "en",
+            "es",
+            "fr",
+            "de",
+            "ru",
+            "zh",
+            "ja",
+            "pt",
+            "ko",
+            "it",
+            "tr",
+            "el"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
