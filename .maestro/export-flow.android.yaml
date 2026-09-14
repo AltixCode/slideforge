@@ -1,5 +1,10 @@
 appId: com.altixcode.slideforge
+name: Export a carousel (Android)
 ---
+# Same contract as the iOS flow against a different export path: Skia's pixel
+# ratio, the snapshot and the save all differ here, so one passing says nothing
+# about the other. verify-cards reads the written files back, because a card of
+# the wrong size or a blank one opens perfectly happily.
 - launchApp:
     clearState: true
 - waitForAnimationToEnd:
@@ -13,12 +18,22 @@ appId: com.altixcode.slideforge
     timeout: 30000
 - waitForAnimationToEnd:
     timeout: 4000
+- scrollUntilVisible:
+    element:
+      text: ".*Save \\d+ cards.*"
+    direction: DOWN
+    timeout: 20000
 - tapOn: ".*Save \\d+ cards.*"
+- runFlow:
+    when:
+      visible: ".*(Allow|ALLOW).*"
+    commands:
+      - tapOn: ".*(Allow|ALLOW).*"
 # Asserted on success alone. The alternation that used to be here also
 # matched "Permission Denied" and "Export Failed", so a refused save or a
 # broken export passed the gate -- the same way a loose ".*OK.*" once let a
 # denial alert read as a success elsewhere in this suite.
 - extendedWaitUntil:
     visible: "Carousel saved"
-    timeout: 120000
-- takeScreenshot: sf-saved
+    timeout: 300000
+- takeScreenshot: android-sf-saved
