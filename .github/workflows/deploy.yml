@@ -65,7 +65,7 @@ jobs:
     # deployments, so jobs queued behind it indefinitely. Nothing here needs
     # Linux -- `setup-java` supplies JDK 17 anywhere and `setup-android`
     # installs the SDK itself.
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.ios_runner == 'github-hosted' && 'macos-14' || fromJSON('["self-hosted", "macOS", "ARM64"]') }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.ios_runner == 'github-hosted' && 'macos-14' || fromJSON('["self-hosted", "macOS", "ARM64", "ios-signing"]') }}
     outputs:
       app_name: ${{ steps.version.outputs.app_name }}
       app_version: ${{ steps.version.outputs.app_version }}
