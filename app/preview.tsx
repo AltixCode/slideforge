@@ -13,6 +13,9 @@ import { saveCards, stageCard } from '../src/engine/exporter';
 import { useTheme } from '../src/theme/useTheme';
 import { t } from '../src/i18n';
 import { PaywallModal } from '../src/components/PaywallModal';
+import { useAdsStore } from '../src/store/adsStore';
+import { showInterstitial } from '../src/services/ads';
+import { shouldShowInterstitial } from '../src/services/adPolicy';
 
 export default function PreviewScreen() {
   const theme = useTheme();
@@ -30,6 +33,22 @@ export default function PreviewScreen() {
   // always snapshots the full-size canvas, never this scaled view.
   const card = cardPointSize();
   const scale = (width - 48) / card.width;
+
+  const maybeShowInterstitial = async () => {
+    const { completions, lastInterstitialAt, markInterstitialShown } = useAdsStore.getState();
+    const decision = shouldShowInterstitial({
+      completions,
+      lastInterstitialAt,
+      now: Date.now(),
+      // Read at call time rather than captured: the user may have bought the upgrade from the
+      // paywall between opening this screen and finishing the work.
+      isPro: useSlideStore.getState().isPro,
+    });
+    if (!decision) return;
+    // Only a shown-and-dismissed ad resets the clock. Counting an unfilled request would
+    // suppress the next several ads for nothing.
+    if (await showInterstitial()) await markInterstitialShown();
+  };
 
   const handleExport = async () => {
     if (!exportable.length) return;
@@ -58,7 +77,12 @@ export default function PreviewScreen() {
       const outcome = await saveCards(staged);
       if (outcome.ok) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(t('savedTitle'), t('savedDesc', { count: outcome.count }));
+        await useAdsStore.getState().recordCompletion();
+        // The ad waits behind the confirmation, and only on a genuine success -- an export
+        // that failed or was refused permission earns no interruption on top of it.
+        Alert.alert(t('savedTitle'), t('savedDesc', { count: outcome.count }), [
+          { text: t('ok'), onPress: () => void maybeShowInterstitial() },
+        ]);
       } else if (outcome.reason === 'permission') {
         Alert.alert(t('permissionDenied'), t('permissionDeniedDesc'));
       } else {
