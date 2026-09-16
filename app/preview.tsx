@@ -11,6 +11,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { CarouselCard, CardScene, cardPointSize, CARD_WIDTH, CARD_HEIGHT } from '../src/engine/carouselRenderer';
 import { saveCards, stageCard } from '../src/engine/exporter';
 import { useTheme } from '../src/theme/useTheme';
+import { useTabletColumn } from '../src/theme/useTabletColumn';
 import { t } from '../src/i18n';
 import { PaywallModal } from '../src/components/PaywallModal';
 import { useAdsStore } from '../src/store/adsStore';
@@ -19,6 +20,7 @@ import { shouldShowInterstitial } from '../src/services/adPolicy';
 
 export default function PreviewScreen() {
   const theme = useTheme();
+  const tabletColumn = useTabletColumn();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { slides, theme: cardTheme, setTheme, isPro, exportableSlides } = useSlideStore();
@@ -99,11 +101,11 @@ export default function PreviewScreen() {
 
   return (
     <SafeAreaView edges={['bottom']} className="flex-1 px-5" style={{ backgroundColor: theme.background }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 , ...tabletColumn}}>
         <Text className="text-xs font-semibold tracking-widest mt-4 mb-3" style={{ color: theme.textMuted }}>
           {t('cardStyle')}
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5" contentContainerStyle={tabletColumn}>
           {THEMES.map((th) => {
             const selected = th.id === cardTheme.id;
             return (
