@@ -101,7 +101,19 @@ export default function PreviewScreen() {
 
   return (
     <SafeAreaView edges={['bottom']} className="flex-1 px-5" style={{ backgroundColor: theme.background }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 , ...tabletColumn}}>
+      {/* `flex: 1`, or this scroll view and the Save button below it fight for
+          the bottom of the screen. A React Native flex child that sets no flex
+          takes its CONTENT height, so once the content is taller than the
+          space left it overflows into its sibling -- which is why the card's
+          "1 / 3" page indicator was photographed cut in half by the Save
+          button on a 13" iPad listing frame. Same defect as the ad-banner
+          overlap fixed across the portfolio; this screen was missed because it
+          has a button below the scroll rather than a banner. */}
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 32, ...tabletColumn }}
+      >
         <Text className="text-xs font-semibold tracking-widest mt-4 mb-3" style={{ color: theme.textMuted }}>
           {t('cardStyle')}
         </Text>
