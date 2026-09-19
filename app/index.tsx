@@ -13,21 +13,25 @@ import { AdBanner } from '../src/components/AdBanner';
 import { useAdsStore } from '../src/store/adsStore';
 import { showPrivacyOptionsForm } from '../src/services/ads';
 
+// Three sentences per card, not one: the original sample left most cards
+// showing a single short line over an empty background, which read as
+// broken rather than minimal in the App Store preview screen. This still
+// fits comfortably within the 320-char-per-slide budget.
 const SAMPLE = `# Three things I learned shipping on my own
 
-Nobody tells you the first version is meant to be embarrassing. Ship it anyway.
+Nobody tells you the first version is meant to be embarrassing. Ship it anyway, because real feedback from five strangers beats another month of polishing alone. The moment it is live, the questions get sharper, and so do you.
 
 ---
 
 # Pick the boring stack
 
-The interesting stack costs you a week of yak shaving before you write a feature.
+The interesting stack costs you a week of yak shaving before you write a single feature that matters. Boring tools have already found their bugs, and the fixes are already indexed on Stack Overflow. Save the interesting choices for the one part of the product only you can build.
 
 ---
 
 # Talk to five users
 
-Five is enough to find the thing everybody trips over.`;
+Five short conversations are enough to find the thing everybody trips over in the first sixty seconds. The sixth call rarely teaches you anything new, but skipping the first five costs you months of confidently building the wrong thing for nobody.`;
 
 export default function HomeScreen() {
   // Google requires a persistent entry back into the consent form wherever UMP reports that
