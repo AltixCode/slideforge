@@ -1,0 +1,35 @@
+{
+  "identifier": "D18B8485-66EA-4181-81D3-41B743FB2493",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "89ABB514-B1C3-4DBD-B4C2-31274D6A0447",
+      "localizations": [
+        {
+          "description": "slideforge remove ads lifetime unlock",
+          "displayName": "slideforge remove ads",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.altixcode.slideforge.removeads",
+      "referenceName": "slideforge remove ads",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_applicationInternalID": "",
+    "_developerTeamID": "",
+    "_failTransactionsEnabled": false,
+    "_lastSynchronizedDate": 0,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}
