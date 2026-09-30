@@ -1,32 +1,87 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { Download, Check, Lock } from 'lucide-react-native';
-import { useSlideStore, FREE_SLIDE_LIMIT } from '../src/store/useSlideStore';
-import { THEMES } from '../src/presets/themes';
-import { drawAsImage } from '@shopify/react-native-skia';
-import * as FileSystem from 'expo-file-system/legacy';
-import { CarouselCard, CardScene, cardPointSize, CARD_WIDTH, CARD_HEIGHT } from '../src/engine/carouselRenderer';
-import { saveCards, stageCard } from '../src/engine/exporter';
-import { useTheme } from '../src/theme/useTheme';
-import { useTabletColumn } from '../src/theme/useTabletColumn';
-import { t } from '../src/i18n';
-import { PaywallModal } from '../src/components/PaywallModal';
-import { useAdsStore } from '../src/store/adsStore';
-import { showInterstitial } from '../src/services/ads';
-import { shouldShowInterstitial } from '../src/services/adPolicy';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  useWindowDimensions,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { Download, Check, Lock } from "lucide-react-native";
+import { useSlideStore, FREE_SLIDE_LIMIT } from "../src/store/useSlideStore";
+import { THEMES } from "../src/presets/themes";
+import { drawAsImage } from "@shopify/react-native-skia";
+import * as FileSystem from "expo-file-system/legacy";
+import {
+  CarouselCard,
+  CardScene,
+  cardPointSize,
+  CARD_WIDTH,
+  CARD_HEIGHT,
+} from "../src/engine/carouselRenderer";
+import { saveCards, stageCard } from "../src/engine/exporter";
+import { useTheme } from "../src/theme/useTheme";
+import { useTabletColumn } from "../src/theme/useTabletColumn";
+import { t } from "../src/i18n";
+import { PaywallModal } from "../src/components/PaywallModal";
+import { useAdsStore } from "../src/store/adsStore";
+import { showInterstitial } from "../src/services/ads";
+import { shouldShowInterstitial } from "../src/services/adPolicy";
+import {
+  CARD_FONTS,
+  CARD_TEXT_COLORS,
+  CARD_BACKGROUND_COLORS,
+  applyCardStyle,
+  fontFamilyFor,
+} from "../src/presets/cardStyle";
+import {
+  DEFAULT_CARD_STYLE,
+  type CardStylePrefs,
+} from "../src/services/cardStylePrefs";
+import {
+  readCardStyle,
+  writeCardStyle,
+} from "../src/services/cardStylePrefsFile";
 
 export default function PreviewScreen() {
   const theme = useTheme();
   const tabletColumn = useTabletColumn();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { slides, theme: cardTheme, setTheme, isPro, exportableSlides } = useSlideStore();
+  const {
+    slides,
+    theme: cardTheme,
+    setTheme,
+    isPro,
+    exportableSlides,
+  } = useSlideStore();
   const [exporting, setExporting] = useState(false);
   const [done, setDone] = useState(0);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [cardStyle, setCardStyle] =
+    useState<CardStylePrefs>(DEFAULT_CARD_STYLE);
+
+  useEffect(() => {
+    let cancelled = false;
+    void readCardStyle().then((prefs) => {
+      if (!cancelled) setCardStyle(prefs);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const updateCardStyle = (next: CardStylePrefs) => {
+    setCardStyle(next);
+    void writeCardStyle(next);
+  };
+
+  const effectiveTheme = applyCardStyle(cardTheme, cardStyle);
+  const effectiveFontFamily = fontFamilyFor(cardStyle.fontId);
 
   const exportable = exportableSlides();
   const locked = slides.length - exportable.length;
@@ -37,7 +92,8 @@ export default function PreviewScreen() {
   const scale = (width - 48) / card.width;
 
   const maybeShowInterstitial = async () => {
-    const { completions, lastInterstitialAt, markInterstitialShown } = useAdsStore.getState();
+    const { completions, lastInterstitialAt, markInterstitialShown } =
+      useAdsStore.getState();
     const decision = shouldShowInterstitial({
       completions,
       lastInterstitialAt,
@@ -65,7 +121,13 @@ export default function PreviewScreen() {
         // drew, so a card scrolled out of sight exported short, and a deck
         // longer than the screen would export whatever happened to be visible.
         const image = await drawAsImage(
-          <CardScene slide={exportable[i]} index={i} total={slides.length} theme={cardTheme} />,
+          <CardScene
+            slide={exportable[i]}
+            index={i}
+            total={slides.length}
+            theme={effectiveTheme}
+            fontFamily={effectiveFontFamily}
+          />,
           { width: CARD_WIDTH, height: CARD_HEIGHT },
         );
         if (!image) throw new Error(`card ${i + 1} did not render`);
@@ -82,25 +144,29 @@ export default function PreviewScreen() {
         await useAdsStore.getState().recordCompletion();
         // The ad waits behind the confirmation, and only on a genuine success -- an export
         // that failed or was refused permission earns no interruption on top of it.
-        Alert.alert(t('savedTitle'), t('savedDesc', { count: outcome.count }), [
-          { text: t('ok'), onPress: () => void maybeShowInterstitial() },
+        Alert.alert(t("savedTitle"), t("savedDesc", { count: outcome.count }), [
+          { text: t("ok"), onPress: () => void maybeShowInterstitial() },
         ]);
-      } else if (outcome.reason === 'permission') {
-        Alert.alert(t('permissionDenied'), t('permissionDeniedDesc'));
+      } else if (outcome.reason === "permission") {
+        Alert.alert(t("permissionDenied"), t("permissionDeniedDesc"));
       } else {
         // Not a permission problem: telling the user to grant access they
         // already granted sends them in a circle.
-        Alert.alert(t('exportFailed'), t('exportFailedDesc'));
+        Alert.alert(t("exportFailed"), t("exportFailedDesc"));
       }
     } catch {
-      Alert.alert(t('exportFailed'), t('exportFailedDesc'));
+      Alert.alert(t("exportFailed"), t("exportFailedDesc"));
     } finally {
       setExporting(false);
     }
   };
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 px-5" style={{ backgroundColor: theme.background }}>
+    <SafeAreaView
+      edges={["bottom"]}
+      className="flex-1 px-5"
+      style={{ backgroundColor: theme.background }}
+    >
       {/* `flex: 1`, or this scroll view and the Save button below it fight for
           the bottom of the screen. A React Native flex child that sets no flex
           takes its CONTENT height, so once the content is taller than the
@@ -114,16 +180,27 @@ export default function PreviewScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32, ...tabletColumn }}
       >
-        <Text className="text-xs font-semibold tracking-widest mt-4 mb-3" style={{ color: theme.textMuted }}>
-          {t('cardStyle')}
+        <Text
+          className="text-xs font-semibold tracking-widest mt-4 mb-3"
+          style={{ color: theme.textMuted }}
+        >
+          {t("cardStyle")}
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5" contentContainerStyle={tabletColumn}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-5"
+          contentContainerStyle={tabletColumn}
+        >
           {THEMES.map((th) => {
             const selected = th.id === cardTheme.id;
             return (
               <TouchableOpacity
                 key={th.id}
-                onPress={() => { Haptics.selectionAsync(); setTheme(th.id); }}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setTheme(th.id);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={th.label}
                 className="mr-2 px-4 py-2.5 rounded-xl border flex-row items-center"
@@ -132,10 +209,140 @@ export default function PreviewScreen() {
                   borderColor: selected ? theme.primary : theme.cardBorder,
                 }}
               >
-                <View className="w-3.5 h-3.5 rounded-full mr-2" style={{ backgroundColor: th.accent }} />
-                <Text className="text-xs font-bold" style={{ color: selected ? theme.primary : theme.textSecondary }}>
+                <View
+                  className="w-3.5 h-3.5 rounded-full mr-2"
+                  style={{ backgroundColor: th.accent }}
+                />
+                <Text
+                  className="text-xs font-bold"
+                  style={{
+                    color: selected ? theme.primary : theme.textSecondary,
+                  }}
+                >
                   {th.label}
                 </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Font, text color and background color, each overriding the chosen theme's own
+            value -- `null` in cardStyle leaves that piece exactly as the theme designed it,
+            so a font-only change does not also reset the colors. */}
+        <Text
+          className="text-xs font-semibold tracking-widest mb-2"
+          style={{ color: theme.textMuted }}
+        >
+          {t("fontStyle")}
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-4"
+          contentContainerStyle={tabletColumn}
+        >
+          {CARD_FONTS.map((font) => {
+            const selected = font.id === cardStyle.fontId;
+            return (
+              <TouchableOpacity
+                key={font.id}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  updateCardStyle({ ...cardStyle, fontId: font.id });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={font.label}
+                className="mr-2 px-4 py-2.5 rounded-xl border"
+                style={{
+                  backgroundColor: selected ? theme.primaryLight : theme.card,
+                  borderColor: selected ? theme.primary : theme.cardBorder,
+                }}
+              >
+                <Text
+                  className="text-xs font-bold"
+                  style={{
+                    fontFamily: font.family,
+                    color: selected ? theme.primary : theme.textSecondary,
+                  }}
+                >
+                  {font.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <Text
+          className="text-xs font-semibold tracking-widest mb-2"
+          style={{ color: theme.textMuted }}
+        >
+          {t("textColor")}
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-4"
+          contentContainerStyle={tabletColumn}
+        >
+          {CARD_TEXT_COLORS.map((color) => {
+            const selected = color.hex === cardStyle.textColor;
+            return (
+              <TouchableOpacity
+                key={color.id}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  updateCardStyle({
+                    ...cardStyle,
+                    textColor: selected ? null : color.hex,
+                  });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={color.label}
+                className="mr-2 w-9 h-9 rounded-full items-center justify-center border-2"
+                style={{
+                  backgroundColor: color.hex,
+                  borderColor: selected ? theme.primary : "transparent",
+                }}
+              >
+                {selected ? <Check size={16} color={theme.primary} /> : null}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <Text
+          className="text-xs font-semibold tracking-widest mb-2"
+          style={{ color: theme.textMuted }}
+        >
+          {t("cardBackgroundColor")}
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-5"
+          contentContainerStyle={tabletColumn}
+        >
+          {CARD_BACKGROUND_COLORS.map((color) => {
+            const selected = color.hex === cardStyle.backgroundColor;
+            return (
+              <TouchableOpacity
+                key={color.id}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  updateCardStyle({
+                    ...cardStyle,
+                    backgroundColor: selected ? null : color.hex,
+                  });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={color.label}
+                className="mr-2 w-9 h-9 rounded-full items-center justify-center border-2"
+                style={{
+                  backgroundColor: color.hex,
+                  borderColor: selected ? theme.primary : "transparent",
+                }}
+              >
+                {selected ? <Check size={16} color={theme.primary} /> : null}
               </TouchableOpacity>
             );
           })}
@@ -145,14 +352,28 @@ export default function PreviewScreen() {
           const isLocked = i >= exportable.length;
           return (
             <View key={i} className="mb-4">
-              <View className="rounded-2xl overflow-hidden" style={{ opacity: isLocked ? 0.45 : 1 }}>
-                <View style={{ width: card.width * scale, height: card.height * scale }}>
-                  <View style={{ transform: [{ scale }], transformOrigin: 'top left' }}>
+              <View
+                className="rounded-2xl overflow-hidden"
+                style={{ opacity: isLocked ? 0.45 : 1 }}
+              >
+                <View
+                  style={{
+                    width: card.width * scale,
+                    height: card.height * scale,
+                  }}
+                >
+                  <View
+                    style={{
+                      transform: [{ scale }],
+                      transformOrigin: "top left",
+                    }}
+                  >
                     <CarouselCard
                       slide={slide}
                       index={i}
                       total={slides.length}
-                      theme={cardTheme}
+                      theme={effectiveTheme}
+                      fontFamily={effectiveFontFamily}
                     />
                   </View>
                 </View>
@@ -165,8 +386,11 @@ export default function PreviewScreen() {
                   style={{ backgroundColor: theme.controlSurface }}
                 >
                   <Lock size={13} color={theme.warning} />
-                  <Text className="text-xs font-bold ml-1.5" style={{ color: theme.warning }}>
-                    {t('lockedCard', { limit: FREE_SLIDE_LIMIT })}
+                  <Text
+                    className="text-xs font-bold ml-1.5"
+                    style={{ color: theme.warning }}
+                  >
+                    {t("lockedCard", { limit: FREE_SLIDE_LIMIT })}
                   </Text>
                 </TouchableOpacity>
               ) : null}
@@ -180,31 +404,48 @@ export default function PreviewScreen() {
         disabled={exporting || !exportable.length}
         accessibilityRole="button"
         className="p-4 rounded-2xl flex-row items-center justify-center mb-2"
-        style={{ backgroundColor: exporting ? theme.controlSurface : theme.primary }}
+        style={{
+          backgroundColor: exporting ? theme.controlSurface : theme.primary,
+        }}
       >
         {exporting ? (
           <>
             <ActivityIndicator color={theme.text} />
-            <Text className="font-bold text-base ml-2" style={{ color: theme.text }}>
-              {t('exportingProgress', { current: done, total: exportable.length })}
+            <Text
+              className="font-bold text-base ml-2"
+              style={{ color: theme.text }}
+            >
+              {t("exportingProgress", {
+                current: done,
+                total: exportable.length,
+              })}
             </Text>
           </>
         ) : (
           <>
             <Download size={18} color={theme.onPrimary} />
-            <Text className="font-bold text-base ml-2" style={{ color: theme.onPrimary }}>
-              {t('saveCards', { count: exportable.length })}
+            <Text
+              className="font-bold text-base ml-2"
+              style={{ color: theme.onPrimary }}
+            >
+              {t("saveCards", { count: exportable.length })}
             </Text>
           </>
         )}
       </TouchableOpacity>
       {locked > 0 ? (
-        <Text className="text-[11px] text-center mb-2" style={{ color: theme.textMuted }}>
-          {t('lockedFooter', { count: locked })}
+        <Text
+          className="text-[11px] text-center mb-2"
+          style={{ color: theme.textMuted }}
+        >
+          {t("lockedFooter", { count: locked })}
         </Text>
       ) : null}
 
-      <PaywallModal visible={paywallVisible} onClose={() => setPaywallVisible(false)} />
+      <PaywallModal
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+      />
     </SafeAreaView>
   );
 }

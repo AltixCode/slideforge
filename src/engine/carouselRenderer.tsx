@@ -1,10 +1,15 @@
-import React from 'react';
-import { PixelRatio } from 'react-native';
+import React from "react";
+import { PixelRatio } from "react-native";
 import {
-  Canvas, Group, Rect, Text as SkText, matchFont, type CanvasRef,
-} from '@shopify/react-native-skia';
-import type { Slide } from './slideSplitter';
-import type { CarouselTheme } from '../presets/themes';
+  Canvas,
+  Group,
+  Rect,
+  Text as SkText,
+  matchFont,
+  type CanvasRef,
+} from "@shopify/react-native-skia";
+import type { Slide } from "./slideSplitter";
+import type { CarouselTheme } from "../presets/themes";
 
 /**
  * Renders one carousel card at full export resolution.
@@ -50,7 +55,7 @@ export const wrapLines = (
   maxWidth: number,
 ): string[] => {
   const lines: string[] = [];
-  let line = '';
+  let line = "";
   for (const word of text.split(/\s+/).filter(Boolean)) {
     const candidate = line ? `${line} ${word}` : word;
     if (line && font.measureText(candidate).width > maxWidth) {
@@ -69,6 +74,9 @@ interface Props {
   index: number;
   total: number;
   theme: CarouselTheme;
+  /** Overrides the card's default typeface. Falls back to Helvetica -- the app's original,
+   * always-available choice -- when unset. */
+  fontFamily?: string;
 }
 
 /**
@@ -79,34 +87,74 @@ interface Props {
  * card scrolled partly out of sight exported three pixels short, and a deck
  * longer than the screen would export whatever happened to be visible.
  */
-export const CardScene: React.FC<Props> = ({ slide, index, total, theme }) => {
-  const titleFont = matchFont({ fontFamily: 'Helvetica', fontSize: TITLE_SIZE, fontWeight: 'bold' });
-  const bodyFont = matchFont({ fontFamily: 'Helvetica', fontSize: BODY_SIZE });
+export const CardScene: React.FC<Props> = ({
+  slide,
+  index,
+  total,
+  theme,
+  fontFamily = "Helvetica",
+}) => {
+  const titleFont = matchFont({
+    fontFamily,
+    fontSize: TITLE_SIZE,
+    fontWeight: "bold",
+  });
+  const bodyFont = matchFont({ fontFamily, fontSize: BODY_SIZE });
 
   const maxWidth = CARD_WIDTH - MARGIN * 2;
   let y = MARGIN + TITLE_SIZE;
 
-  const titleLines = slide.title ? wrapLines(slide.title, titleFont, maxWidth) : [];
+  const titleLines = slide.title
+    ? wrapLines(slide.title, titleFont, maxWidth)
+    : [];
   const bodyBlocks = slide.body.map((p) => wrapLines(p, bodyFont, maxWidth));
 
   return (
     <Group>
-      <Rect x={0} y={0} width={CARD_WIDTH} height={CARD_HEIGHT} color={theme.background} />
+      <Rect
+        x={0}
+        y={0}
+        width={CARD_WIDTH}
+        height={CARD_HEIGHT}
+        color={theme.background}
+      />
       {/* Accent bar anchors the eye and makes the deck read as one set. */}
       <Rect x={0} y={0} width={CARD_WIDTH} height={14} color={theme.accent} />
       <Group>
         {titleLines.map((line, i) => {
           const at = y + i * TITLE_SIZE * LINE_GAP;
-          return <SkText key={`t${i}`} x={MARGIN} y={at} text={line} font={titleFont} color={theme.title} />;
+          return (
+            <SkText
+              key={`t${i}`}
+              x={MARGIN}
+              y={at}
+              text={line}
+              font={titleFont}
+              color={theme.title}
+            />
+          );
         })}
         {(() => {
-          let cursor = y + titleLines.length * TITLE_SIZE * LINE_GAP + (titleLines.length ? BODY_SIZE : 0);
+          let cursor =
+            y +
+            titleLines.length * TITLE_SIZE * LINE_GAP +
+            (titleLines.length ? BODY_SIZE : 0);
           return bodyBlocks.flatMap((lines, b) =>
             lines.map((line, i) => {
               const at = cursor + i * BODY_SIZE * LINE_GAP;
-              if (i === lines.length - 1) cursor = at + BODY_SIZE * LINE_GAP * 1.4;
-              return <SkText key={`b${b}-${i}`} x={MARGIN} y={at} text={line} font={bodyFont} color={theme.body} />;
-            })
+              if (i === lines.length - 1)
+                cursor = at + BODY_SIZE * LINE_GAP * 1.4;
+              return (
+                <SkText
+                  key={`b${b}-${i}`}
+                  x={MARGIN}
+                  y={at}
+                  text={line}
+                  font={bodyFont}
+                  color={theme.body}
+                />
+              );
+            }),
           );
         })()}
       </Group>
